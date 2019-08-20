@@ -48,6 +48,10 @@ export function object(name, value, groupId) {
   return manager.knob(name, { type: 'object', value, groupId });
 }
 
+export function json(name, value, groupId) {
+  return manager.knob(name, { type: 'json', value, groupId });
+}
+
 export function select(name, options, value, groupId) {
   return manager.knob(name, { type: 'select', selectV2: true, options, value, groupId });
 }

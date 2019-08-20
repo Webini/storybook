@@ -10,6 +10,7 @@ import DateType from './Date';
 import ButtonType from './Button';
 import FilesType from './Files';
 import OptionsType from './Options';
+import JsonType from './Json';
 
 export default {
   text: TextType,
@@ -24,4 +25,5 @@ export default {
   button: ButtonType,
   files: FilesType,
   options: OptionsType,
+  json: JsonType,
 };

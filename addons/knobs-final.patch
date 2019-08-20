@@ -1,0 +1,154 @@
+diff --git a/addons/knobs/package.json b/addons/knobs/package.json
+index c4dac7b13..33031e519 100644
+--- a/addons/knobs/package.json
++++ b/addons/knobs/package.json
+@@ -27,6 +27,7 @@
+     "@storybook/components": "5.1.9",
+     "@storybook/core-events": "5.1.9",
+     "@storybook/theming": "5.1.9",
++    "brace": "^0.11.1",
+     "copy-to-clipboard": "^3.0.8",
+     "core-js": "^3.0.1",
+     "escape-html": "^1.0.3",
+@@ -35,6 +36,7 @@
+     "lodash": "^4.17.11",
+     "prop-types": "^15.7.2",
+     "qs": "^6.6.0",
++    "react-ace": "^7.0.2",
+     "react-color": "^2.17.0",
+     "react-lifecycles-compat": "^3.0.4",
+     "react-select": "^2.2.0"
+diff --git a/addons/knobs/src/components/types/Json.js b/addons/knobs/src/components/types/Json.js
+new file mode 100644
+index 000000000..0e1bc2809
+--- /dev/null
++++ b/addons/knobs/src/components/types/Json.js
+@@ -0,0 +1,95 @@
++import React, { Component } from 'react';
++import PropTypes from 'prop-types';
++import deepEqual from 'fast-deep-equal';
++import { polyfill } from 'react-lifecycles-compat';
++
++import brace from 'brace';
++import AceEditor from 'react-ace';
++
++import 'brace/mode/json';
++import 'brace/theme/textmate';
++
++const editorOptions = {
++  enableBasicAutocompletion: true,
++  enableLiveAutocompletion: true,
++  enableSnippets: false,
++  showLineNumbers: true,
++  tabSize: 2,
++};
++
++class JsonType extends Component {
++  state = {
++    value: {},
++    failed: false,
++    json: '',
++  };
++
++  static getDerivedStateFromProps(props, state) {
++    if (!deepEqual(props.knob.value, state.json)) {
++      try {
++        return {
++          value: JSON.stringify(props.knob.value, null, 2),
++          failed: false,
++          json: props.knob.value,
++        };
++      } catch (e) {
++        return { value: 'Object cannot be stringified', failed: true };
++      }
++    }
++    return null;
++  }
++
++  handleChange = value => {
++    const { json: stateJson } = this.state;
++    const { knob, onChange } = this.props;
++
++    try {
++      const json = JSON.parse(value.trim());
++      this.setState({
++        value,
++        json,
++        failed: false,
++      });
++      if (deepEqual(knob.value, stateJson)) {
++        onChange(json);
++      }
++    } catch (err) {
++      this.setState({
++        value,
++        failed: true,
++      });
++    }
++  };
++
++  render() {
++    const { value, failed } = this.state;
++    const { knob } = this.props;
++
++    return (
++      <AceEditor
++        theme="github"
++        mode="json"
++        name={knob.name}
++        valid={failed ? 'error' : null}
++        value={value}
++        onChange={this.handleChange}
++        setOptions={editorOptions}
++      />
++    );
++  }
++}
++
++JsonType.propTypes = {
++  knob: PropTypes.shape({
++    name: PropTypes.string,
++    value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
++  }).isRequired,
++  onChange: PropTypes.func.isRequired,
++};
++
++JsonType.serialize = object => JSON.stringify(object);
++JsonType.deserialize = value => (value ? JSON.parse(value) : {});
++
++polyfill(JsonType);
++
++export default JsonType;
+diff --git a/addons/knobs/src/components/types/index.js b/addons/knobs/src/components/types/index.js
+index b0c620dd9..662212b00 100644
+--- a/addons/knobs/src/components/types/index.js
++++ b/addons/knobs/src/components/types/index.js
+@@ -10,6 +10,7 @@ import DateType from './Date';
+ import ButtonType from './Button';
+ import FilesType from './Files';
+ import OptionsType from './Options';
++import JsonType from './Json';
+ 
+ export default {
+   text: TextType,
+@@ -24,4 +25,5 @@ export default {
+   button: ButtonType,
+   files: FilesType,
+   options: OptionsType,
++  json: JsonType,
+ };
+diff --git a/addons/knobs/src/index.js b/addons/knobs/src/index.js
+index 7035ead6c..e2920a3c9 100644
+--- a/addons/knobs/src/index.js
++++ b/addons/knobs/src/index.js
+@@ -48,6 +48,10 @@ export function object(name, value, groupId) {
+   return manager.knob(name, { type: 'object', value, groupId });
+ }
+ 
++export function json(name, value, groupId) {
++  return manager.knob(name, { type: 'json', value, groupId });
++}
++
+ export function select(name, options, value, groupId) {
+   return manager.knob(name, { type: 'select', selectV2: true, options, value, groupId });
+ }
