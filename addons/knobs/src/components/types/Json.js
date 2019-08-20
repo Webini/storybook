@@ -8,6 +8,8 @@ import AceEditor from 'react-ace';
 
 import 'brace/mode/json';
 import 'brace/theme/textmate';
+import 'brace/ext/language_tools';
+import 'brace/ext/searchbox';
 
 const editorOptions = {
   enableBasicAutocompletion: true,
@@ -20,12 +22,12 @@ const editorOptions = {
 class JsonType extends Component {
   state = {
     value: {},
-    failed: false,
+    failed: false, // eslint-disable-line
     json: '',
   };
 
   static getDerivedStateFromProps(props, state) {
-    if (!deepEqual(props.knob.value, state.json)) {
+    if (props.knob.value && !state.json) {
       try {
         return {
           value: JSON.stringify(props.knob.value, null, 2),
@@ -40,40 +42,36 @@ class JsonType extends Component {
   }
 
   handleChange = value => {
-    const { json: stateJson } = this.state;
+    const { value: stateValue } = this.state;
     const { knob, onChange } = this.props;
+    if (value === stateValue) {
+      return;
+    }
 
     try {
       const json = JSON.parse(value.trim());
-      this.setState({
-        value,
-        json,
-        failed: false,
-      });
-      if (deepEqual(knob.value, stateJson)) {
-        onChange(json);
-      }
+      this.setState({ value, json, failed: false }); // eslint-disable-line
+      onChange(json);
     } catch (err) {
       this.setState({
         value,
-        failed: true,
+        failed: true, // eslint-disable-line
       });
     }
   };
 
   render() {
-    const { value, failed } = this.state;
+    const { value } = this.state;
     const { knob } = this.props;
 
     return (
       <AceEditor
-        theme="github"
+        theme="textmate"
         mode="json"
         name={knob.name}
-        valid={failed ? 'error' : null}
-        value={value}
+        value={value || ''}
         onChange={this.handleChange}
-        setOptions={editorOptions}
+        {...editorOptions}
       />
     );
   }
